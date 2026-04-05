@@ -1,0 +1,13 @@
+feat: prepare backend integration for auth, shop data, and orders
+
+- Add ApiService placeholders for backend communication
+- Update AuthProvider to support login and registration flow
+- Update ShopProvider to fetch categories and products (stubs)
+- Update Product and Category models with fromJson factories
+- Update UI screens to handle real data and network images
+- Add order placement stubs in CheckoutScreen
+- Reorganize project structure into core, data, logic, and presentation layers
+
+🤖 Generated with [Pochi](https://getpochi.com) | [Task](https://app.getpochi.com/share/p-c05efb7bec034ab089bc96c4aff1c5ec)
+
+Co-Authored-By: Pochi <noreply@getpochi.com>

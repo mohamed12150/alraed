@@ -1,0 +1,17 @@
+## Summary
+This PR prepares the Flutter application for integration with an external backend (e.g., Supabase). It includes:
+- **Authentication**: Hooks and providers ready for auth integration.
+- **Shop Data**: Stubs for fetching categories and products from a backend.
+- **Orders**: Stubs for order placement logic.
+- **UI Updates**: All screens updated to support real data, network images, and loading states.
+- **Refactoring**: Reorganized the project structure into a more scalable architecture (core, data, logic, presentation).
+
+## Test plan
+1. Configure your backend (Supabase or other) and add credentials to `.env`.
+2. Run the Flutter app.
+3. Register a new user or login via the configured backend.
+4. Browse categories and products.
+5. Add items to cart and complete the checkout process.
+6. Verify the order is created in your backend.
+
+🤖 Generated with [Pochi](https://getpochi.com) | [Task](https://app.getpochi.com/share/p-c05efb7bec034ab089bc96c4aff1c5ec)

@@ -1,0 +1,32 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea"/>
+      <stop offset="100%" style="stop-color:#764ba2"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="90" fill="url(#bg)" opacity="0.1"/>
+  
+  <!-- Shopping bag -->
+  <g transform="translate(100, 100)">
+    <!-- Bag body -->
+    <rect x="-25" y="-10" width="50" height="40" rx="5" fill="#667eea" opacity="0.8"/>
+    
+    <!-- Bag handles -->
+    <path d="M -15 -10 Q -15 -25 0 -25 Q 15 -25 15 -10" 
+          stroke="#667eea" stroke-width="3" fill="none" stroke-linecap="round"/>
+    
+    <!-- Fashion items in bag -->
+    <circle cx="-8" cy="5" r="3" fill="#764ba2" opacity="0.6"/>
+    <circle cx="8" cy="5" r="3" fill="#764ba2" opacity="0.6"/>
+    <rect x="-5" y="15" width="10" height="8" rx="2" fill="#764ba2" opacity="0.4"/>
+  </g>
+  
+  <!-- Decorative elements -->
+  <circle cx="50" cy="50" r="4" fill="#667eea" opacity="0.3"/>
+  <circle cx="150" cy="60" r="3" fill="#764ba2" opacity="0.3"/>
+  <circle cx="40" cy="150" r="5" fill="#667eea" opacity="0.2"/>
+  <circle cx="160" cy="140" r="4" fill="#764ba2" opacity="0.2"/>
+</svg>
