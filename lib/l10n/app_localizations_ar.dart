@@ -151,4 +151,14 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get freshDaily => 'طازج يومياً';
+
+  @override
+  String get noInternet => 'لا يوجد اتصال بالإنترنت';
+
+  @override
+  String get checkConnection =>
+      'يرجى التحقق من اتصالك بالشبكة والمحاولة مرة أخرى';
+
+  @override
+  String get retry => 'إعادة المحاولة';
 }

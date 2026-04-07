@@ -47,5 +47,8 @@
     "withFat": "With Fat",
     "withoutFat": "Without Fat",
     "meatOrigin": "Meat Origin",
-    "freshDaily": "Fresh Daily"
+    "freshDaily": "Fresh Daily",
+    "noInternet": "No Internet Connection",
+    "checkConnection": "Please check your network connection and try again",
+    "retry": "Retry"
 }

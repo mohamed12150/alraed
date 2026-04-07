@@ -385,6 +385,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fresh Daily'**
   String get freshDaily;
+
+  /// No description provided for @noInternet.
+  ///
+  /// In en, this message translates to:
+  /// **'No Internet Connection'**
+  String get noInternet;
+
+  /// No description provided for @checkConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Please check your network connection and try again'**
+  String get checkConnection;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
 }
 
 class _AppLocalizationsDelegate

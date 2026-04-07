@@ -151,4 +151,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get freshDaily => 'Fresh Daily';
+
+  @override
+  String get noInternet => 'No Internet Connection';
+
+  @override
+  String get checkConnection =>
+      'Please check your network connection and try again';
+
+  @override
+  String get retry => 'Retry';
 }

@@ -13,6 +13,8 @@ import 'logic/providers/shop_provider.dart';
 import 'logic/providers/auth_provider.dart';
 import 'logic/providers/navigation_provider.dart';
 import 'logic/providers/orders_provider.dart';
+import 'logic/providers/connectivity_provider.dart';
+import 'presentation/screens/no_internet_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,9 +42,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ShopProvider()),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
         ChangeNotifierProvider(create: (_) => OrdersProvider()),
+        ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
       ],
-      child: Consumer2<ThemeProvider, LanguageProvider>(
-        builder: (context, themeProvider, languageProvider, child) {
+      child: Consumer3<ThemeProvider, LanguageProvider, ConnectivityProvider>(
+        builder: (context, themeProvider, languageProvider, connectivityProvider, child) {
           return MaterialApp.router(
             title: 'لحومي - Meatly',
             debugShowCheckedModeBanner: false,
@@ -62,6 +65,14 @@ class MyApp extends StatelessWidget {
               Locale('ar', ''), // Arabic
             ],
             routerConfig: AppRouter.router,
+            builder: (context, child) {
+              if (connectivityProvider.status == ConnectivityStatus.isDisconnected) {
+                return NoInternetScreen(
+                  onRetry: () => connectivityProvider.checkNow(),
+                );
+              }
+              return child ?? const SizedBox.shrink();
+            },
           );
         },
       ),
