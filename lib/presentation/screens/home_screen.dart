@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../logic/providers/language_provider.dart';
 import '../../logic/providers/cart_provider.dart';
 import '../../logic/providers/navigation_provider.dart';
@@ -36,6 +37,24 @@ class _HomeScreenState extends State<HomeScreen> {
                 const CartTab(),
                 const ProfileTab(),
               ],
+            ),
+            floatingActionButton: FloatingActionButton(
+              onPressed: () async {
+                final Uri url = Uri.parse('https://wa.me/966575684434');
+                if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          isArabic ? 'تعذر فتح واتساب' : 'Could not launch WhatsApp',
+                        ),
+                      ),
+                    );
+                  }
+                }
+              },
+              backgroundColor: const Color(0xFF25D366),
+              child: const Icon(Icons.message, color: Colors.white),
             ),
             bottomNavigationBar: Consumer<CartProvider>(
               builder: (context, cartProvider, child) {

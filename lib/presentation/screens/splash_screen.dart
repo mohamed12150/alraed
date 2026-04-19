@@ -33,7 +33,10 @@ class _SplashScreenState extends State<SplashScreen>
     _timer = Timer(const Duration(seconds: 3), () async {
       if (mounted) {
         // Check Maintenance Mode
-        final settings = await SupabaseService().getAppSettings();
+        final settings = await SupabaseService().getAppSettings().timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => null,
+        );
         if (mounted && settings != null) {
           // Check if maintenance mode is enabled or app is not active
           if (settings['is_app_active'] == false) {

@@ -16,6 +16,11 @@ class ShopProvider extends ChangeNotifier {
   String _selectedCategoryId = '';
   int _currentBannerIndex = 0;
   bool _isLoading = false;
+  double _deliveryFee = 0.0;
+  double _taxRate = 0.0;
+  String _contactPhone = '';
+  String _bankAccount = '';
+  String _bankIban = '';
 
   List<Category> get categories => _categories;
   List<Product> get products => _products;
@@ -26,6 +31,11 @@ class ShopProvider extends ChangeNotifier {
   String get selectedCategoryId => _selectedCategoryId;
   int get currentBannerIndex => _currentBannerIndex;
   bool get isLoading => _isLoading;
+  double get deliveryFee => _deliveryFee;
+  double get taxRate => _taxRate;
+  String get contactPhone => _contactPhone;
+  String get bankAccount => _bankAccount;
+  String get bankIban => _bankIban;
 
   ShopProvider() {
     fetchInitialData();
@@ -79,6 +89,16 @@ class ShopProvider extends ChangeNotifier {
       } else {
         _specialOffers = [];
       }
+
+      final settings = await _apiService.getAppSettings();
+      if (settings != null) {
+        _deliveryFee = (settings['delivery_fee'] ?? 0.0).toDouble();
+        final percentage = (settings['tax_percentage'] ?? 0.0).toDouble();
+        _taxRate = percentage / 100;
+        _contactPhone = settings['contact_phone']?.toString() ?? '';
+        _bankAccount = settings['bank_account']?.toString() ?? '';
+        _bankIban = settings['bank_iban']?.toString() ?? '';
+      }
     } catch (e) {
       // Keep empty if error
       _categories = [];
@@ -87,6 +107,8 @@ class ShopProvider extends ChangeNotifier {
       _discountedProducts = [];
       _banners = [];
       _specialOffers = [];
+      _deliveryFee = 0.0;
+      _taxRate = 0.0;
       debugPrint('Error fetching data: $e');
     }
 

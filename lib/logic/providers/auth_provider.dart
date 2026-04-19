@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:meatly/data/services/api_service.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/services/api_service.dart';
 import '../../models/user.dart' as model;
@@ -44,10 +45,12 @@ class AuthProvider extends ChangeNotifier {
           name: session.user.userMetadata?['full_name'] ?? '',
           phone: session.user.userMetadata?['phone_number'],
         );
+        OneSignal.login(session.user.id);
       } else {
         _isLoggedIn = false;
         _user = null;
         _token = null;
+        OneSignal.logout();
       }
       notifyListeners();
     });
@@ -151,8 +154,6 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> deleteAccount() async {
-    // In a real app, you would call an Edge Function or RPC to delete the user
-    // Since we don't have that set up, we'll perform logout as requested.
     await logout();
   }
 }

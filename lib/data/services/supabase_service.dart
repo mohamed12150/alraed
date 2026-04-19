@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -132,6 +133,24 @@ class SupabaseService {
     }
   }
 
+  Future<String?> uploadReceiptImage(String filePath) async {
+    try {
+      final user = client.auth.currentUser;
+      if (user == null) return null;
+
+      final file = File(filePath);
+      final fileExt = filePath.split('.').last.toLowerCase();
+      final fileName = '${user.id}/${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+
+      await client.storage.from('receipts').upload(fileName, file);
+
+      return client.storage.from('receipts').getPublicUrl(fileName);
+    } catch (e) {
+      print('Error uploading receipt image: $e');
+      return null;
+    }
+  }
+
   Future<Map<String, dynamic>> placeOrder(
     Map<String, dynamic> orderData,
   ) async {
@@ -151,6 +170,8 @@ class SupabaseService {
         'city': orderData['city'],
         'address': orderData['address'],
         'shipping_address': orderData['shipping_address'],
+        if (orderData['payment_receipt_url'] != null)
+          'payment_receipt_url': orderData['payment_receipt_url'],
       };
 
       final orderRes = await client
@@ -160,6 +181,7 @@ class SupabaseService {
           .single();
 
       final orderId = orderRes['id'];
+      final orderNumber = orderRes['order_number']?.toString() ?? orderId.toString();
 
       // 2. Create Order Items
       final items = (orderData['items'] as List).map((item) {
@@ -205,7 +227,7 @@ class SupabaseService {
         }
       }
 
-      return {'success': true, 'order_id': orderId};
+      return {'success': true, 'order_id': orderId, 'order_number': orderNumber};
     } catch (e) {
       print('Error placing order: $e');
       return {'success': false, 'message': e.toString()};

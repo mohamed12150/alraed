@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../logic/providers/language_provider.dart';
 import '../../../logic/providers/theme_provider.dart';
 import '../../../logic/providers/auth_provider.dart';
+import '../../../logic/providers/shop_provider.dart';
 import '../../screens/privacy_screen.dart';
 
 class ProfileTab extends StatelessWidget {
@@ -51,8 +53,8 @@ class ProfileTab extends StatelessWidget {
           ),
           content: Text(
             isArabic
-                ? 'تحذير: سيتم حذف جميع بياناتك وطلباتك نهائياً من النظام. هل أنت متأكد؟'
-                : 'Warning: All your data and orders will be permanently deleted from the system. Are you sure?',
+                ? 'تحذير: سيتم توجيهك لنموذج طلب حذف البيانات والحساب نهائياً من النظام. هل أنت متأكد؟'
+                : 'Warning: You will be redirected to a form to request permanent deletion of your data and account. Are you sure?',
           ),
           actions: [
             TextButton(
@@ -60,9 +62,24 @@ class ProfileTab extends StatelessWidget {
               child: Text(isArabic ? 'إلغاء' : 'Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 context.pop();
-                context.read<AuthProvider>().deleteAccount();
+                final Uri url = Uri.parse(
+                  'https://forms.gle/Rwrw7t4iKjfbjZ198',
+                );
+                if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          isArabic
+                              ? 'تعذر فتح الرابط'
+                              : 'Could not launch the link',
+                        ),
+                      ),
+                    );
+                  }
+                }
               },
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               child: Text(isArabic ? 'حذف الحساب' : 'Delete Account'),
@@ -83,9 +100,10 @@ class ProfileTab extends StatelessWidget {
       }
     });
 
-    return Consumer3<LanguageProvider, ThemeProvider, AuthProvider>(
-      builder: (context, languageProvider, themeProvider, authProvider, child) {
+    return Consumer4<LanguageProvider, ThemeProvider, AuthProvider, ShopProvider>(
+      builder: (context, languageProvider, themeProvider, authProvider, shopProvider, child) {
         final isArabic = languageProvider.isArabic;
+        final contactPhone = shopProvider.contactPhone;
 
         return Directionality(
           textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
@@ -254,10 +272,30 @@ class ProfileTab extends StatelessWidget {
                           context: context,
                           builder: (context) => AlertDialog(
                             title: Text(isArabic ? 'الدعم الفني' : 'Support'),
-                            content: Text(
-                              isArabic
-                                  ? 'يمكنك التواصل معنا عبر البريد: zbihacompany@gmail.com'
-                                  : 'Contact us via email: zbihacompany@gmail.com',
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (contactPhone.isNotEmpty) ...[
+                                  Text(isArabic ? 'رقم التواصل:' : 'Contact Number:',
+                                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 4),
+                                  InkWell(
+                                    onTap: () => launchUrl(Uri.parse('tel:$contactPhone')),
+                                    child: Text(
+                                      contactPhone,
+                                      style: TextStyle(
+                                        color: Theme.of(context).primaryColor,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ] else
+                                  Text(isArabic
+                                      ? 'يمكنك التواصل معنا عبر البريد: zbihacompany@gmail.com'
+                                      : 'Contact us via email: zbihacompany@gmail.com'),
+                              ],
                             ),
                             actions: [
                               TextButton(

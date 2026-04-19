@@ -6,6 +6,9 @@ import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../../../logic/providers/language_provider.dart';
 import '../../../logic/providers/shop_provider.dart';
+import '../../../logic/providers/location_provider.dart';
+import '../../../logic/providers/notifications_provider.dart';
+import '../../../logic/providers/auth_provider.dart';
 import '../../../models/product.dart';
 import '../../../models/banner.dart' as banner_model;
 import '../../widgets/shimmer_loading.dart';
@@ -32,6 +35,13 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
     // Auto-scroll banners
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startBannerTimer();
+      context.read<LocationProvider>().determinePosition();
+      final authProvider = context.read<AuthProvider>();
+      if (authProvider.isLoggedIn) {
+        final notifProvider = context.read<NotificationsProvider>();
+        notifProvider.fetchNotifications(authProvider.user!.id);
+        notifProvider.subscribeRealtime(authProvider.user!.id);
+      }
     });
   }
 
@@ -269,70 +279,139 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
   }
 
   Widget _buildHeader(bool isArabic, ThemeData theme) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 60, 20, 30),
-      decoration: BoxDecoration(
-        color: theme.primaryColor,
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            isArabic ? 'أهلاً بك!' : 'Hello Meat Lover!',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
+    return Consumer<LocationProvider>(
+      builder: (context, locationProvider, child) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(20, 50, 20, 30),
+          decoration: BoxDecoration(
+            color: theme.primaryColor,
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(32),
+              bottomRight: Radius.circular(32),
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            isArabic
-                ? 'ذبيحة كاملة أو مقطعة حسب طلبك'
-                : 'Whole carcass or cut to order',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
-              fontSize: 18,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Container(
-            height: 55,
-            decoration: BoxDecoration(
-              color: theme.brightness == Brightness.light
-                  ? Colors.white
-                  : theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(28),
-            ),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
-              decoration: InputDecoration(
-                hintText: isArabic ? 'ابحث عن نوع اللحم...' : 'Search meat...',
-                prefixIcon: Icon(
-                  Iconsax.search_normal,
-                  color: Colors.grey[400],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              InkWell(
+                onTap: () => locationProvider.determinePosition(),
+                child: Row(
+                  children: [
+                    const Icon(Iconsax.location, color: Colors.white, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        locationProvider.isLoading
+                            ? (isArabic ? 'جاري تحديد الموقع...' : 'Getting location...')
+                            : (locationProvider.currentAddress.isNotEmpty
+                                ? '${isArabic ? 'التوصيل إلى: ' : 'Deliver to: '}${locationProvider.currentAddress}'
+                                : (isArabic ? 'اضغط لتحديد الموقع' : 'Tap to set location')),
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const Icon(
+                      Icons.keyboard_arrow_down,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    // Bell icon
+                    Consumer<NotificationsProvider>(
+                      builder: (context, notifProvider, _) {
+                        final unread = notifProvider.unreadCount;
+                        return GestureDetector(
+                          onTap: () => context.push('/notifications'),
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              const Icon(Iconsax.notification, color: Colors.white, size: 24),
+                              if (unread > 0)
+                                Positioned(
+                                  top: -4,
+                                  right: -4,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(3),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                                    child: Text(
+                                      unread > 99 ? '99+' : '$unread',
+                                      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 15),
-                fillColor: Colors
-                    .transparent, // Overriding the theme's fillColor for this specific case
               ),
-            ),
+              const SizedBox(height: 12),
+              Text(
+                isArabic ? 'أهلاً بك!' : 'Hello Meat Lover!',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isArabic
+                    ? 'ذبيحة كاملة أو مقطعة حسب طلبك'
+                    : 'Whole carcass or cut to order',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.9),
+                  fontSize: 18,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                height: 55,
+                decoration: BoxDecoration(
+                  color: theme.brightness == Brightness.light
+                      ? Colors.white
+                      : theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(28),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText: isArabic ? 'ابحث عن نوع اللحم...' : 'Search meat...',
+                    prefixIcon: Icon(
+                      Iconsax.search_normal,
+                      color: Colors.grey[400],
+                    ),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                    fillColor: Colors
+                        .transparent, // Overriding the theme's fillColor for this specific case
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

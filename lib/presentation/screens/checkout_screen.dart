@@ -1,6 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:meatly/logic/providers/auth_provider.dart';
 import 'package:meatly/logic/providers/orders_provider.dart';
+import 'package:meatly/logic/providers/shop_provider.dart';
+import 'package:meatly/logic/providers/location_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
@@ -21,18 +26,50 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _phoneController = TextEditingController();
   final SupabaseService _supabaseService = SupabaseService();
 
-  String selectedPaymentMethod = 'cash';
+  String selectedPaymentMethod = 'bank_transfer';
   bool isProcessing = false;
-
-  // Constants
-  final double deliveryFee = 20.0;
-  final double taxRate = 0.15;
+  File? _receiptImage;
 
   @override
   void dispose() {
     _addressController.dispose();
     _phoneController.dispose();
+
     super.dispose();
+  }
+
+  Future<void> _pickReceiptImage() async {
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final picker = ImagePicker();
+
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: Text(languageProvider.isArabic ? 'من المعرض' : 'From Gallery'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+                if (picked != null) setState(() => _receiptImage = File(picked.path));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: Text(languageProvider.isArabic ? 'من الكاميرا' : 'From Camera'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final picked = await picker.pickImage(source: ImageSource.camera, imageQuality: 80);
+                if (picked != null) setState(() => _receiptImage = File(picked.path));
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _processOrder() async {
@@ -59,19 +96,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       isProcessing = true;
     });
 
+    // Capture providers before async gap
     final cartProvider = Provider.of<CartProvider>(context, listen: false);
+    final shopProvider = Provider.of<ShopProvider>(context, listen: false);
+
+    // Upload receipt image if provided
+    String? receiptImageUrl;
+    if (_receiptImage != null) {
+      receiptImageUrl = await _supabaseService.uploadReceiptImage(_receiptImage!.path);
+    }
 
     // Calculate totals
     final subtotal = cartProvider.totalAmount;
-    final tax = subtotal * taxRate;
-    final total = subtotal + tax + deliveryFee;
+    final tax = subtotal * shopProvider.taxRate;
+    final total = subtotal + tax + shopProvider.deliveryFee;
 
     // Prepare order data for API
     final orderData = {
       'total_amount': total,
       'payment_method': selectedPaymentMethod,
       'status': 'pending',
-      'delivery_fee': deliveryFee,
+      'delivery_fee': shopProvider.deliveryFee,
       'tax': tax,
       'subtotal': subtotal,
 
@@ -86,6 +131,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       'phone': _phoneController.text,
       'city': 'Riyadh',
       'address': _addressController.text,
+
+      'payment_receipt_url': receiptImageUrl,
 
       'shipping_address': {
         'street': _addressController.text,
@@ -141,8 +188,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         }
 
         if (mounted) {
-          final orderId = result['order_id'].toString();
-          context.pushReplacement('/order-complete', extra: orderId);
+          final orderNumber = result['order_number']?.toString() ?? result['order_id'].toString();
+          context.pushReplacement('/order-complete', extra: orderNumber);
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -215,6 +262,51 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildBankDetail(BuildContext context, String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.grey[600],
+          ),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: SelectableText(
+                value,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  letterSpacing: 1.1,
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Iconsax.copy, size: 20, color: Colors.blue),
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: value));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      Localizations.localeOf(context).languageCode == 'ar'
+                          ? 'تم النسخ!'
+                          : 'Copied!',
+                    ),
+                    duration: const Duration(seconds: 1),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -320,8 +412,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<LanguageProvider, CartProvider>(
-      builder: (context, languageProvider, cartProvider, child) {
+    return Consumer4<LanguageProvider, CartProvider, ShopProvider, LocationProvider>(
+      builder: (context, languageProvider, cartProvider, shopProvider, locationProvider, child) {
+        final deliveryFee = shopProvider.deliveryFee;
+        final taxRate = shopProvider.taxRate;
+
+        // Auto-fill address from GPS if empty
+        if (_addressController.text.isEmpty && locationProvider.currentAddress.isNotEmpty) {
+          _addressController.text = locationProvider.currentAddress;
+        }
+
         return Directionality(
           textDirection: languageProvider.isArabic
               ? TextDirection.rtl
@@ -518,8 +618,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 _buildSummaryRow(
                                   context,
                                   languageProvider.isArabic
-                                      ? 'الضريبة (15%)'
-                                      : 'Tax (15%)',
+                                      ? 'الضريبة (${(taxRate * 100).toStringAsFixed(0)}%)'
+                                      : 'Tax (${(taxRate * 100).toStringAsFixed(0)}%)',
                                   cartProvider.totalAmount * taxRate,
                                 ),
                                 const Divider(),
@@ -556,6 +656,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   : 'District / Street Name',
                               border: const OutlineInputBorder(),
                               prefixIcon: const Icon(Iconsax.location),
+                              suffixIcon: IconButton(
+                                icon: locationProvider.isLoading
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      )
+                                    : const Icon(Iconsax.gps, color: Colors.blue),
+                                onPressed: () async {
+                                  await locationProvider.determinePosition();
+                                  if (locationProvider.currentAddress.isNotEmpty) {
+                                    _addressController.text = locationProvider.currentAddress;
+                                  }
+                                },
+                                tooltip: languageProvider.isArabic
+                                    ? 'تحديد موقعي الحالي'
+                                    : 'Use current location',
+                              ),
                             ),
                             validator: (value) {
                               if (value?.isEmpty ?? true) {
@@ -607,16 +725,128 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           const SizedBox(height: 16),
 
                           _buildPaymentMethod(
-                            id: 'cash',
+                            id: 'bank_transfer',
                             title: languageProvider.isArabic
-                                ? 'الدفع عند الاستلام'
-                                : 'Cash on Delivery',
+                                ? 'تحويل بنكي'
+                                : 'Bank Transfer',
                             subtitle: languageProvider.isArabic
-                                ? 'ادفع عند وصول الطلب'
-                                : 'Pay when you receive',
-                            icon: Iconsax.money,
+                                ? 'حول المبلغ وارفقه برقم الإشعار'
+                                : 'Transfer and provide reference',
+                            icon: Iconsax.bank,
                             context: context,
                           ),
+
+                          if (selectedPaymentMethod == 'bank_transfer') ...[
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.blue.withOpacity(0.2),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (shopProvider.bankAccount.isNotEmpty)
+                                    _buildBankDetail(
+                                      context,
+                                      languageProvider.isArabic ? 'رقم الحساب' : 'Account Number',
+                                      shopProvider.bankAccount,
+                                    ),
+                                  if (shopProvider.bankAccount.isNotEmpty && shopProvider.bankIban.isNotEmpty)
+                                    const Divider(height: 24),
+                                  if (shopProvider.bankIban.isNotEmpty)
+                                    _buildBankDetail(
+                                      context,
+                                      languageProvider.isArabic ? 'الآيبان' : 'IBAN',
+                                      shopProvider.bankIban,
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            // Receipt image upload
+                            GestureDetector(
+                              onTap: _pickReceiptImage,
+                              child: Container(
+                                width: double.infinity,
+                                constraints: const BoxConstraints(minHeight: 120),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).cardColor,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: _receiptImage != null
+                                        ? Theme.of(context).primaryColor
+                                        : Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                                    width: _receiptImage != null ? 2 : 1,
+                                    style: _receiptImage != null ? BorderStyle.solid : BorderStyle.solid,
+                                  ),
+                                ),
+                                child: _receiptImage != null
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(15),
+                                        child: Stack(
+                                          children: [
+                                            Image.file(
+                                              _receiptImage!,
+                                              width: double.infinity,
+                                              fit: BoxFit.cover,
+                                            ),
+                                            Positioned(
+                                              top: 8,
+                                              right: 8,
+                                              child: GestureDetector(
+                                                onTap: () => setState(() => _receiptImage = null),
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(4),
+                                                  decoration: const BoxDecoration(
+                                                    color: Colors.red,
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                    : Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          const SizedBox(height: 24),
+                                          Icon(
+                                            Iconsax.image,
+                                            size: 40,
+                                            color: Theme.of(context).primaryColor.withValues(alpha: 0.6),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            languageProvider.isArabic
+                                                ? 'ارفع صورة الإشعار'
+                                                : 'Upload Receipt Image',
+                                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                              color: Theme.of(context).primaryColor,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            languageProvider.isArabic
+                                                ? 'اضغط لاختيار الصورة من الجهاز'
+                                                : 'Tap to pick from device',
+                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 24),
+                                        ],
+                                      ),
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 32),
                         ],
                       ),

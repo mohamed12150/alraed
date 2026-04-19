@@ -14,6 +14,9 @@ import 'logic/providers/auth_provider.dart';
 import 'logic/providers/navigation_provider.dart';
 import 'logic/providers/orders_provider.dart';
 import 'logic/providers/connectivity_provider.dart';
+import 'logic/providers/location_provider.dart';
+import 'logic/providers/notifications_provider.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'presentation/screens/no_internet_screen.dart';
 
 Future<void> main() async {
@@ -24,6 +27,14 @@ Future<void> main() async {
   if (supabaseUrl != null && supabaseKey != null) {
     await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
   }
+
+  OneSignal.initialize('b4dd4cad-ad7c-459f-bf22-36c97481ee63');
+  await OneSignal.Notifications.requestPermission(true);
+
+  // عرض الإشعار حتى لو التطبيق مفتوح
+  OneSignal.Notifications.addForegroundWillDisplayListener((event) {
+    event.notification.display();
+  });
 
   runApp(const MyApp());
 }
@@ -43,11 +54,13 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
         ChangeNotifierProvider(create: (_) => OrdersProvider()),
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
+        ChangeNotifierProvider(create: (_) => LocationProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationsProvider()),
       ],
       child: Consumer3<ThemeProvider, LanguageProvider, ConnectivityProvider>(
         builder: (context, themeProvider, languageProvider, connectivityProvider, child) {
           return MaterialApp.router(
-            title: 'لحومي - Meatly',
+            title: 'الرائد للذبائح - Al Raed',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,

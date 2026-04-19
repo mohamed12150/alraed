@@ -109,6 +109,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
+
   Widget _buildOrderCard(BuildContext context, Order order, bool isArabic) {
     final dateFormat = DateFormat('yyyy-MM-dd HH:mm');
     final formattedDate = dateFormat.format(order.createdAt);
@@ -128,7 +129,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: _getStatusColor(order.status).withOpacity(0.1),
+                color: _getStatusColor(order.status).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: _getStatusColor(order.status)),
               ),
@@ -163,7 +164,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.5),
+            color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.5),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

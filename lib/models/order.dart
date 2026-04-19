@@ -58,6 +58,13 @@ class Order {
     this.items = const [],
   });
 
+  Order copyWithStatus(String newStatus) => Order(
+    id: id, userId: userId, totalAmount: totalAmount,
+    paymentMethod: paymentMethod, status: newStatus,
+    phone: phone, city: city, address: address,
+    createdAt: createdAt, items: items,
+  );
+
   factory Order.fromJson(Map<String, dynamic> json) {
     var itemsList = <OrderItem>[];
     if (json['order_items'] != null) {

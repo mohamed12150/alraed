@@ -16,6 +16,7 @@ import '../../presentation/screens/category_products_screen.dart';
 import '../../presentation/screens/product_list_screen.dart';
 import '../../presentation/screens/orders_screen.dart';
 import '../../presentation/screens/maintenance_screen.dart';
+import '../../presentation/screens/notifications_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -134,6 +135,11 @@ class AppRouter {
         path: '/maintenance',
         name: 'maintenance',
         builder: (context, state) => const MaintenanceScreen(),
+      ),
+      GoRoute(
+        path: '/notifications',
+        name: 'notifications',
+        builder: (context, state) => const NotificationsScreen(),
       ),
     ],
   );
