@@ -21,6 +21,12 @@ class ShopProvider extends ChangeNotifier {
   String _contactPhone = '';
   String _bankAccount = '';
   String _bankIban = '';
+  String _bankRajhiAccount = '';
+  String _bankRajhiIban = '';
+  String _bankAhliAccount = '';
+  String _bankAhliIban = '';
+  String _bankInmaAccount = '';
+  String _bankInmaIban = '';
 
   List<Category> get categories => _categories;
   List<Product> get products => _products;
@@ -36,6 +42,12 @@ class ShopProvider extends ChangeNotifier {
   String get contactPhone => _contactPhone;
   String get bankAccount => _bankAccount;
   String get bankIban => _bankIban;
+  String get bankRajhiAccount => _bankRajhiAccount;
+  String get bankRajhiIban => _bankRajhiIban;
+  String get bankAhliAccount => _bankAhliAccount;
+  String get bankAhliIban => _bankAhliIban;
+  String get bankInmaAccount => _bankInmaAccount;
+  String get bankInmaIban => _bankInmaIban;
 
   ShopProvider() {
     fetchInitialData();
@@ -98,6 +110,12 @@ class ShopProvider extends ChangeNotifier {
         _contactPhone = settings['contact_phone']?.toString() ?? '';
         _bankAccount = settings['bank_account']?.toString() ?? '';
         _bankIban = settings['bank_iban']?.toString() ?? '';
+        _bankRajhiAccount = settings['bank_rajhi_account']?.toString() ?? '';
+        _bankRajhiIban = settings['bank_rajhi_iban']?.toString() ?? '';
+        _bankAhliAccount = settings['bank_ahli_account']?.toString() ?? '';
+        _bankAhliIban = settings['bank_ahli_iban']?.toString() ?? '';
+        _bankInmaAccount = settings['bank_inma_account']?.toString() ?? '';
+        _bankInmaIban = settings['bank_inma_iban']?.toString() ?? '';
       }
     } catch (e) {
       // Keep empty if error

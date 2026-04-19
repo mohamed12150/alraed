@@ -27,6 +27,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final SupabaseService _supabaseService = SupabaseService();
 
   String selectedPaymentMethod = 'bank_transfer';
+  String selectedBank = 'rajhi';
   bool isProcessing = false;
   File? _receiptImage;
 
@@ -113,6 +114,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     // Capture providers before async gap
     final cartProvider = Provider.of<CartProvider>(context, listen: false);
     final shopProvider = Provider.of<ShopProvider>(context, listen: false);
+    final locationProvider = Provider.of<LocationProvider>(context, listen: false);
 
     // Upload receipt image if provided
     String? receiptImageUrl;
@@ -147,12 +149,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       'address': _addressController.text,
 
       'payment_receipt_url': receiptImageUrl,
+      if (selectedPaymentMethod == 'bank_transfer') 'selected_bank': selectedBank,
 
       'shipping_address': {
         'street': _addressController.text,
         'city': 'Riyadh',
         'phone': _phoneController.text,
       },
+      if (locationProvider.latitude != null && locationProvider.longitude != null)
+        'location': {
+          'name': _addressController.text,
+          'lat': locationProvider.latitude,
+          'lng': locationProvider.longitude,
+        },
 
       'items': cartProvider.items.map((item) {
         final Map<String, dynamic> itemData = {
@@ -764,20 +773,60 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  if (shopProvider.bankAccount.isNotEmpty)
-                                    _buildBankDetail(
-                                      context,
-                                      languageProvider.isArabic ? 'رقم الحساب' : 'Account Number',
-                                      shopProvider.bankAccount,
+                                  Text(
+                                    languageProvider.isArabic ? 'اختر البنك' : 'Select Bank',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  DropdownButtonFormField<String>(
+                                    value: selectedBank,
+                                    decoration: InputDecoration(
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                     ),
-                                  if (shopProvider.bankAccount.isNotEmpty && shopProvider.bankIban.isNotEmpty)
-                                    const Divider(height: 24),
-                                  if (shopProvider.bankIban.isNotEmpty)
-                                    _buildBankDetail(
-                                      context,
-                                      languageProvider.isArabic ? 'الآيبان' : 'IBAN',
-                                      shopProvider.bankIban,
-                                    ),
+                                    items: [
+                                      DropdownMenuItem(value: 'rajhi', child: Text(languageProvider.isArabic ? 'بنك الراجحي' : 'Al Rajhi Bank')),
+                                      DropdownMenuItem(value: 'ahli', child: Text(languageProvider.isArabic ? 'البنك الأهلي' : 'Al Ahli Bank')),
+                                      DropdownMenuItem(value: 'inma', child: Text(languageProvider.isArabic ? 'بنك الإنماء' : 'Al Inma Bank')),
+                                    ],
+                                    onChanged: (val) {
+                                      if (val != null) setState(() => selectedBank = val);
+                                    },
+                                  ),
+                                  const Divider(height: 24),
+                                  Builder(builder: (context) {
+                                    String account = '';
+                                    String iban = '';
+                                    if (selectedBank == 'rajhi') {
+                                      account = shopProvider.bankRajhiAccount;
+                                      iban = shopProvider.bankRajhiIban;
+                                    } else if (selectedBank == 'ahli') {
+                                      account = shopProvider.bankAhliAccount;
+                                      iban = shopProvider.bankAhliIban;
+                                    } else if (selectedBank == 'inma') {
+                                      account = shopProvider.bankInmaAccount;
+                                      iban = shopProvider.bankInmaIban;
+                                    }
+                                    return Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        if (account.isNotEmpty)
+                                          _buildBankDetail(
+                                            context,
+                                            languageProvider.isArabic ? 'رقم الحساب' : 'Account Number',
+                                            account,
+                                          ),
+                                        if (account.isNotEmpty && iban.isNotEmpty)
+                                          const Divider(height: 24),
+                                        if (iban.isNotEmpty)
+                                          _buildBankDetail(
+                                            context,
+                                            languageProvider.isArabic ? 'الآيبان' : 'IBAN',
+                                            iban,
+                                          ),
+                                      ],
+                                    );
+                                  }),
                                 ],
                               ),
                             ),

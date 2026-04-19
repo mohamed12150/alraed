@@ -4,9 +4,13 @@ import 'package:geocoding/geocoding.dart';
 
 class LocationProvider extends ChangeNotifier {
   String _currentAddress = '';
+  double? _latitude;
+  double? _longitude;
   bool _isLoading = false;
 
   String get currentAddress => _currentAddress;
+  double? get latitude => _latitude;
+  double? get longitude => _longitude;
   bool get isLoading => _isLoading;
 
   Future<void> determinePosition() async {
@@ -47,6 +51,9 @@ class LocationProvider extends ChangeNotifier {
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
+
+      _latitude = position.latitude;
+      _longitude = position.longitude;
 
       List<Placemark> placemarks = await placemarkFromCoordinates(
         position.latitude,

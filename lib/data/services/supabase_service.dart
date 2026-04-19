@@ -172,6 +172,10 @@ class SupabaseService {
         'shipping_address': orderData['shipping_address'],
         if (orderData['payment_receipt_url'] != null)
           'payment_receipt_url': orderData['payment_receipt_url'],
+        if (orderData['selected_bank'] != null)
+          'selected_bank': orderData['selected_bank'],
+        if (orderData['location'] != null)
+          'location': orderData['location'],
       };
 
       final orderRes = await client
