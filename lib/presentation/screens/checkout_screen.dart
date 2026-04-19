@@ -92,6 +92,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       return;
     }
 
+    if (selectedPaymentMethod == 'bank_transfer' && _receiptImage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            languageProvider.isArabic
+                ? 'يرجى رفع صورة إشعار التحويل'
+                : 'Please upload the transfer receipt image',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       isProcessing = true;
     });
